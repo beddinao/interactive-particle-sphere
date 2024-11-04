@@ -91,54 +91,6 @@ void	mouse_handle(mouse_key_t button, action_t action, modifier_key_t mods, void
 		_data->_mouse->cursor_pressed = 0;
 }
 
-void	cursor_handle(double xpos, double ypos, void *param) {
-	data	*_data = (data*)param;
-	int	diff_x, diff_y;
-	//
-	if (!_data->_mouse->cursor_pressed) {
-		_data->_mouse->init_cursor_x = xpos;
-		_data->_mouse->init_cursor_y = ypos;
-	}
-	else {
-		diff_x = abs(((int)xpos - _data->_mouse->init_cursor_x) / 5);
-		diff_y = abs(((int)ypos - _data->_mouse->init_cursor_y) / 5);
-
-		int	pos_x = _data->width / 2 - _data->_world->radius,
-			pos_y = _data->height / 2 - _data->_world->radius;
-
-		/*_data->_world->y_angle = __calc_new_range(diff_y, 0, _data->height / 5, 0, 360);
-		_data->_world->x_angle = __calc_new_range(diff_x, 0, _data->width / 5, 0, 360);*/
-		_data->_world->y_angle = 20;
-		_data->_world->x_angle = 30;
-		
-		printf("new_angle_x: %i, new_angle_y: %i\n", _data->_world->x_angle, _data->_world->y_angle);
-
-		for (int i = 0; i < _data->_world->particle_count && _data->_world->particles[i]; i++) {
-			_data->_world->particles[i][4] = cos(_data->_world->y_angle) * _data->_world->particles[i][4] - sin(_data->_world->y_angle) * _data->_world->particles[i][2];
-			_data->_world->particles[i][2] = sin(_data->_world->y_angle) * _data->_world->particles[i][4] + cos(_data->_world->y_angle) * _data->_world->particles[i][2];
-			//
-			_data->_world->particles[i][3] = cos(_data->_world->x_angle) * _data->_world->particles[i][3] + sin(_data->_world->x_angle) * _data->_world->particles[i][2];
-			_data->_world->particles[i][2] = -sin(_data->_world->x_angle) * _data->_world->particles[i][3] - cos(_data->_world->x_angle) * _data->_world->particles[i][2];
-			//
-			_data->_world->particles[i][0] = (int)__calc_new_range(_data->_world->particles[i][3], -1, 1, pos_x, _data->_world->radius * 2);
-			_data->_world->particles[i][1] = (int)__calc_new_range(_data->_world->particles[i][4], -1, 1, pos_y, _data->_world->radius * 2);
-		}
-	}
-}
-
-
-void	build_particles(data *_data) {
-	_data->_world->particles = malloc( (_data->_world->particle_count + 1) * sizeof(float*) );
-	if (!_data->_world->particles)
-		exit( release(_data, 1) );
-	for (int y = 0; y < _data->_world->particle_count; y++) {
-		_data->_world->particles[y] = malloc( 5 * sizeof(float) );
-		if (!_data->_world->particles[y]) exit( release(_data, 1) );
-		memset(_data->_world->particles[y], 0, sizeof(float) * 3);
-	}
-	_data->_world->particles[ _data->_world->particle_count ] = NULL;
-}
-
 void	init_particles_position(data *_data) {
 	int		cur_particle = 0;
 	float		x, y, z;
@@ -148,8 +100,6 @@ void	init_particles_position(data *_data) {
 	int	pos_x = _data->width / 2 - _data->_world->radius,
 		pos_y = _data->height / 2 - _data->_world->radius;
 
-	_data->_world->x_angle = 10;
-	_data->_world->y_angle = 20;
 	for (float i = 0; i <= M_PI; i += M_PI / C_COUNT) {
 		radius = sin(i);
 		circ_y = cos(i);
@@ -173,6 +123,52 @@ void	init_particles_position(data *_data) {
 	}
 }
 
+void	cursor_handle(double xpos, double ypos, void *param) {
+	data	*_data = (data*)param;
+	int	diff_x, diff_y;
+	//
+	if (!_data->_mouse->cursor_pressed) {
+		_data->_mouse->init_cursor_x = xpos;
+		_data->_mouse->init_cursor_y = ypos;
+	}
+	else {
+		diff_x = ((int)xpos - _data->_mouse->init_cursor_x) / 5;
+		diff_y = ((int)ypos - _data->_mouse->init_cursor_y) / 5;
+
+
+		//printf("diff_x: %i, diff_y: %i\n", diff_x, diff_y);
+		_data->_world->x_angle += diff_x; // -1000
+		while (_data->_world->x_angle < 0) 
+			_data->_world->x_angle = 360 - (0 - _data->_world->x_angle);
+		while (_data->_world->x_angle > 360)
+			_data->_world->x_angle = 0 + (_data->_world->x_angle - 360);
+
+
+		_data->_world->y_angle += diff_y;
+		while (_data->_world->y_angle < 0)
+			_data->_world->y_angle = 360 - (0 - _data->_world->y_angle);
+		while (_data->_world->y_angle > 360)
+			_data->_world->y_angle = 0 + (_data->_world->y_angle - 360);
+		
+		//printf("new_angle_x: %i, new_angle_y: %i\n", _data->_world->x_angle, _data->_world->y_angle);
+		if (diff_x || diff_y)
+			init_particles_position(_data);
+	}
+}
+
+
+void	build_particles(data *_data) {
+	_data->_world->particles = malloc( (_data->_world->particle_count + 1) * sizeof(float*) );
+	if (!_data->_world->particles)
+		exit( release(_data, 1) );
+	for (int y = 0; y < _data->_world->particle_count; y++) {
+		_data->_world->particles[y] = malloc( 5 * sizeof(float) );
+		if (!_data->_world->particles[y]) exit( release(_data, 1) );
+		memset(_data->_world->particles[y], 0, sizeof(float) * 3);
+	}
+	_data->_world->particles[ _data->_world->particle_count ] = NULL;
+}
+
 void	draw_bg(data* _data, int color) {
 	for (int y = 0; y < _data->height; y++) 
 		for (int x = 0; x < _data->width; x++)
@@ -185,7 +181,7 @@ void	draw_particles(data *_data) {
 		if (_data->_world->particles[i][0] > 0 && _data->_world->particles[i][1] > 0
 			&& _data->_world->particles[i][0] < _data->width && _data->_world->particles[i][1] < _data->height)
 			mlx_put_pixel(_data->mlx_img, _data->_world->particles[i][0], _data->_world->particles[i][1],
-				0xFFFFFF << 8 |(int)__calc_new_range(_data->_world->particles[i][2], -1, 1, 10, 255));
+				0xFFFFFF << 8 | (int)__calc_new_range(_data->_world->particles[i][2], -2, 2, 10, 255));
 	}
 }
 
@@ -211,7 +207,10 @@ void	init_world(data *_data) {
 	for (float i = 0; i <= M_PI; i += M_PI / C_COUNT)
 		for (float j = 0; j < M_PI * 2; j += M_PI / C_COUNT)
 			_data->_world->particle_count += 1;
+
 	build_particles(_data);
+	_data->_world->x_angle = 10;
+	_data->_world->y_angle = 20;
 	init_particles_position(_data);
 }
 
