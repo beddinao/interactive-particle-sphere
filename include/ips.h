@@ -42,7 +42,7 @@ typedef struct map_data
 	int		particle_count;
 	int		radius;
 	int		x_angle;
-	int		y_angle
+	int		y_angle;
 }	world_data;
 
 typedef struct data
