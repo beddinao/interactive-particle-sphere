@@ -130,6 +130,21 @@ void	cursor_handle(double xpos, double ypos, void *param) {
 	if (!_data->_mouse->cursor_pressed) {
 		_data->_mouse->init_cursor_x = xpos;
 		_data->_mouse->init_cursor_y = ypos;
+		//
+		/*for (int i = 0; i < _data->_world->particle_count && _data->_world->particles[i]; i++) {
+			if (abs((int)_data->_world->particles[i][0] - (int)xpos) < 100) {
+				if (_data->_world->particles[i][0] > _data->width / 2)
+					_data->_world->particles[i][0] = (_data->width / 2 - (_data->_world->particles[i][0] - _data->width / 2)) * 2;
+				else if (_data->_world->particles[i][0] < _data->width / 2)
+					_data->_world->particles[i][0] = (_data->width / 2 + (_data->width / 2 - _data->_world->particles[i][0])) * 2;
+			}
+			if (abs((int)_data->_world->particles[i][1] - (int)ypos) < 100) {
+				if (_data->_world->particles[i][1] > _data->height / 2)
+					_data->_world->particles[i][1] = (_data->height / 2 - (_data->_world->particles[i][1] - _data->height / 2)) * 2;
+				else if (_data->_world->particles[i][1] < _data->height / 2)
+					_data->_world->particles[i][1] = (_data->height / 2 + (_data->height / 2 - _data->_world->particles[i][1])) * 2;
+			}
+		}*/
 	}
 	else {
 		if (_data->_mouse->event_counter >= 1) {
@@ -181,10 +196,16 @@ void	draw_bg(data* _data, int color) {
 void	draw_particles(data *_data) {
 	//
 	for (int i = 0; i < _data->_world->particle_count && _data->_world->particles[i]; i++) {
-		if (_data->_world->particles[i][0] > 0 && _data->_world->particles[i][1] > 0
-			&& _data->_world->particles[i][0] < _data->width && _data->_world->particles[i][1] < _data->height)
-			mlx_put_pixel(_data->mlx_img, _data->_world->particles[i][0], _data->_world->particles[i][1],
-				0xFFFFFF << 8 | (int)__calc_new_range(_data->_world->particles[i][2], -2, 2, 10, 255));
+		
+		for (int i_y = _data->_world->particles[i][1] - 1; i_y <= _data->_world->particles[i][1] + 1; i_y++) {
+			for (int i_x = _data->_world->particles[i][0] - 1; i_x <= _data->_world->particles[i][0] + 1; i_x++) {
+				if (i_x > 0 && i_y > 0 && i_x < _data->width && i_y < _data->height) {
+					int	color = (int)__calc_new_range(_data->_world->particles[i][2], -2, 2, 0, 255);
+					int	result = (color << 16) + (color << 8) + color;
+					mlx_put_pixel(_data->mlx_img, i_x, i_y, result << 8 | 0xFF);
+				}
+			}
+		}
 	}
 }
 
