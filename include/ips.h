@@ -19,13 +19,13 @@
 # define FALSE 0
 #endif
 
+#define	C_COUNT		30
 #define	DEF_PPC		1
 #define	DEF_FPG		4
 #define	MIN_WIDTH		600
 #define	MIN_HEIGHT	300
 #define	DEF_WIDTH		1600
 #define	DEF_HEIGHT	800
-//#define	BG_COLOR		0x151515
 #define	BG_COLOR		0x000000
 #define	CELL_COLOR	0xF0EEE9
 
