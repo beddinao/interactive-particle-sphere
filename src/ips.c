@@ -125,34 +125,37 @@ void	init_particles_position(data *_data) {
 
 void	cursor_handle(double xpos, double ypos, void *param) {
 	data	*_data = (data*)param;
-	int	diff_x, diff_y;
+	float	diff_x, diff_y;
 	//
 	if (!_data->_mouse->cursor_pressed) {
 		_data->_mouse->init_cursor_x = xpos;
 		_data->_mouse->init_cursor_y = ypos;
 	}
 	else {
-		diff_x = ((int)xpos - _data->_mouse->init_cursor_x) / 5;
-		diff_y = ((int)ypos - _data->_mouse->init_cursor_y) / 5;
+		if (_data->_mouse->event_counter >= 1) {
+			_data->_mouse->event_counter = 0;
+			diff_x = _data->_mouse->init_cursor_x - (int)xpos;
+			diff_y = _data->_mouse->init_cursor_y - (int)ypos;
 
+			diff_x = diff_x > 0 ? 0.1 : diff_x < 0 ? -0.1 : 0;
+			diff_y = diff_y > 0 ? 0.1 : diff_y < 0 ? -0.1 : 0;
+	
+			_data->_world->x_angle += diff_x;
+			while (_data->_world->x_angle < 0) 
+				_data->_world->x_angle = 360 - (0 - _data->_world->x_angle);
+			while (_data->_world->x_angle > 360)
+				_data->_world->x_angle = 0 + (_data->_world->x_angle - 360);
 
-		//printf("diff_x: %i, diff_y: %i\n", diff_x, diff_y);
-		_data->_world->x_angle += diff_x; // -1000
-		while (_data->_world->x_angle < 0) 
-			_data->_world->x_angle = 360 - (0 - _data->_world->x_angle);
-		while (_data->_world->x_angle > 360)
-			_data->_world->x_angle = 0 + (_data->_world->x_angle - 360);
-
-
-		_data->_world->y_angle += diff_y;
-		while (_data->_world->y_angle < 0)
-			_data->_world->y_angle = 360 - (0 - _data->_world->y_angle);
-		while (_data->_world->y_angle > 360)
-			_data->_world->y_angle = 0 + (_data->_world->y_angle - 360);
-		
-		//printf("new_angle_x: %i, new_angle_y: %i\n", _data->_world->x_angle, _data->_world->y_angle);
-		if (diff_x || diff_y)
-			init_particles_position(_data);
+			_data->_world->y_angle += diff_y;
+			while (_data->_world->y_angle < 0)
+				_data->_world->y_angle = 360 - (0 - _data->_world->y_angle);
+			while (_data->_world->y_angle > 360)
+				_data->_world->y_angle = 0 + (_data->_world->y_angle - 360);
+			
+			if (diff_x || diff_y)
+				init_particles_position(_data);
+		}
+		else	_data->_mouse->event_counter += 1;
 	}
 }
 

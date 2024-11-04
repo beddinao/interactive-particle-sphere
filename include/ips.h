@@ -34,6 +34,7 @@ typedef struct mouse_data
 	int		init_cursor_x;
 	int		init_cursor_y;
 	bool		cursor_pressed;
+	int		event_counter;
 }	mouse_data;
 
 typedef struct map_data
@@ -41,8 +42,8 @@ typedef struct map_data
 	float		**particles;
 	int		particle_count;
 	int		radius;
-	int		x_angle;
-	int		y_angle;
+	float		x_angle;
+	float		y_angle;
 }	world_data;
 
 typedef struct data
