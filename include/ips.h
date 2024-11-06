@@ -19,7 +19,7 @@
 # define FALSE 0
 #endif
 
-#define	C_COUNT		50	
+#define	C_COUNT		100	
 #define	DEF_PPC		1
 #define	DEF_FPG		4
 #define	MIN_WIDTH		600
@@ -28,6 +28,20 @@
 #define	DEF_HEIGHT	800
 #define	BG_COLOR		0x000000
 #define	CELL_COLOR	0xF0EEE9
+
+typedef struct particle
+{
+	float		x;
+	float		y;
+	float		z;
+	//
+	bool		real;
+	float		t_x;
+	float		t_y;
+	//
+	float		eo_x;
+	float		eo_y;
+}	particle;
 
 typedef struct mouse_data
 {
@@ -39,11 +53,18 @@ typedef struct mouse_data
 
 typedef struct map_data
 {
-	float		**particles;
+	particle		**particles;
 	int		particle_count;
 	int		radius;
 	float		x_angle;
 	float		y_angle;
+	float		coef;
+	float		f_dir_x;
+	float		f_dir_y;
+	float		f_dir_z;
+	float		s_dir_x;
+	float		s_dir_y;
+	float		s_dir_z;
 }	world_data;
 
 typedef struct data
@@ -61,6 +82,8 @@ typedef struct data
 	int		last_resize_w;
 	int		last_resize_h;
 	//
+	int		center_x;
+	int		center_y;
 }	data;
 
 #endif

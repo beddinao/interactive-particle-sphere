@@ -1,6 +1,6 @@
 #include "ips.h"
 
-void	free_particles(float **particles, int particle_count) {
+void	free_particles(particle **particles, int particle_count) {
 	for (int y = 0; particles[y] && y < particle_count; y++)
 		free(particles[y]);
 	free(particles);
@@ -38,6 +38,111 @@ float	__calc_new_range(float old_value, float old_min, float old_max, float new_
 	return (((old_value - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min;
 }
 
+/*voidi init_particles_position(data *_data) {
+    int cur_particle = 0;
+    float x, y, z;
+    float circ_y;
+    float radius;
+    int pos_x = _data->width / 2 - _data->_world->radius;
+    int pos_y = _data->height / 2 - _data->_world->radius;
+    float x_angle = _data->_world->x_angle * (M_PI / 180.0f); // Convert to radians
+    float y_angle = _data->_world->y_angle * (M_PI / 180.0f); // Convert to radians
+
+    // Calculate directional vectors
+    _data->_world->f_dir_x = _data->center_x + _data->_world->radius * cosf(y_angle);
+    _data->_world->f_dir_y = _data->center_y + _data->_world->radius * sinf(y_angle);
+
+    _data->_world->s_dir_x = _data->center_x + _data->_world->radius * cosf(x_angle);
+    _data->_world->s_dir_y = _data->center_y + _data->_world->radius * sinf(x_angle);
+
+    // Sphere generation
+    for (float i = 0; i <= M_PI; i += M_PI / C_COUNT) {
+        radius = sinf(i);
+        circ_y = cosf(i);
+        
+        for (float j = 0; j <= M_PI * 2; j += M_PI / C_COUNT) {
+            x = cosf(j) * radius;
+            z = sinf(j) * radius;
+
+            // Rotate around Y axis
+            float temp_x = x;
+            x = cosf(x_angle) * x + sinf(x_angle) * z;
+            z = -sinf(x_angle) * temp_x + cosf(x_angle) * z;
+
+            // Rotate around X axis
+            float temp_y = circ_y;
+            y = cosf(y_angle) * circ_y - sinf(y_angle) * z;
+            z = sinf(y_angle) * temp_y + cosf(y_angle) * z;
+
+            // Store particle position
+            _data->_world->particles[cur_particle]->x = (int)__calc_new_range(x, -1, 1, 
+                pos_x, pos_x + _data->_world->radius * 2);
+            _data->_world->particles[cur_particle]->y = (int)__calc_new_range(y, -1, 1, 
+                pos_y, pos_y + _data->_world->radius * 2);
+            _data->_world->particles[cur_particle]->z = z;
+            _data->_world->particles[cur_particle]->eo_x = x;
+            _data->_world->particles[cur_particle]->eo_y = y;
+
+            // Calculate target positions if particle is real
+            if (_data->_world->particles[cur_particle]->real) {
+                _data->_world->particles[cur_particle]->t_x = _data->center_x - 
+                    (_data->_world->particles[cur_particle]->x - _data->center_x) * _data->_world->coef;
+                _data->_world->particles[cur_particle]->t_y = _data->center_y - 
+                    (_data->_world->particles[cur_particle]->y - _data->center_y) * _data->_world->coef;
+            }
+            
+            cur_particle++;
+        }
+    }
+}*/
+
+void	init_particles_position(data *_data) {
+	int		cur_particle = 0;
+	float		x, y, z;
+	float		circ_y;
+	float		radius;
+	
+	int	pos_x = _data->width / 2 - _data->_world->radius,
+		pos_y = _data->height / 2 - _data->_world->radius;
+
+	float x_angle = _data->_world->x_angle * (M_PI / 180.0f); // Convert to radians
+ 	float y_angle = _data->_world->y_angle * (M_PI / 180.0f); // Convert to radians
+ 
+ 	_data->_world->f_dir_x = _data->center_x + _data->_world->radius * cosf(y_angle);
+	_data->_world->f_dir_y = _data->center_y + _data->_world->radius * sinf(y_angle);
+	_data->_world->s_dir_x = _data->center_x + _data->_world->radius * cosf(x_angle);
+	_data->_world->s_dir_y = _data->center_y + _data->_world->radius * sinf(x_angle);
+
+
+	//printf("x_x: %f, x_y: %f, y_x: %f, y_y: %f\n", _data->_world->f_dir_x, _data->_world->f_dir_y, _data->_world->s_dir_x, _data->_world->s_dir_y);
+
+	for (float i = 0; i <= M_PI; i += M_PI / C_COUNT) {
+		radius = sin(i);
+		circ_y = cos(i);
+		for (float j = 0; j <= M_PI * 2; j += M_PI / C_COUNT) {
+			x = cos(j) * radius;
+			z = sin(j) * radius;
+			// Y
+			y = cos(y_angle) * circ_y - sin(y_angle) * z;
+			z = sin(y_angle) * circ_y + cos(y_angle) * z;
+			// X
+			x = cos(x_angle) * x + sin(x_angle) * z;
+			z = -sin(x_angle) * x - cos(x_angle) * z;
+			//
+			_data->_world->particles[cur_particle]->x = (int)__calc_new_range(x, -1, 1, pos_x, pos_x + _data->_world->radius * 2);
+			_data->_world->particles[cur_particle]->y = (int)__calc_new_range(y, -1, 1, pos_y, pos_y + _data->_world->radius * 2);
+			_data->_world->particles[cur_particle]->z = z;
+			_data->_world->particles[cur_particle]->eo_x = x;
+			_data->_world->particles[cur_particle]->eo_y = y;
+			if (_data->_world->particles[cur_particle]->real) {
+				_data->_world->particles[cur_particle]->t_x = _data->center_x - (_data->_world->particles[cur_particle]->x - _data->center_x) * _data->_world->coef;
+				_data->_world->particles[cur_particle]->t_y = _data->center_y - (_data->_world->particles[cur_particle]->y - _data->center_y) * _data->_world->coef;
+			}
+			cur_particle += 1;
+		}
+	}
+}
+
 void	close_handle(void *p) {
 	data	*_data = (data*)p;
 	exit( release(_data, 0) );
@@ -52,9 +157,16 @@ void	resize_handle(int w, int h, void *p) {
 		_data->width = w;
 		//
 		if (abs(h - _data->last_resize_h) > 30 && abs(w - _data->last_resize_w) > 30) {
+			_data->_world->radius = _data->height / 3;
+			if (_data->_world->radius >= _data->width)
+				_data->_world->radius = _data->width / 3;
+			_data->center_x = _data->width / 2;
+			_data->center_y = _data->height / 2;
 			//
 			_data->last_resize_w = w;
 			_data->last_resize_h = h;
+			//
+			init_particles_position(_data);
 		}
 		if (!mlx_resize_image(_data->mlx_img, _data->width, _data->height))
 			exit( release(_data, 1) );
@@ -76,10 +188,15 @@ void	key_handle(mlx_key_data_t keydata, void *p) {
 void	scroll_handle(double xdelta, double ydelta, void *param) {
 	data	*_data = (data*)param;
 
-	if (ydelta > 0 && _data->PPC < _data->width && _data->PPC < _data->height)
-		_data->PPC += 1;
-	else if (ydelta < 0 && _data->PPC > 1)
-		_data->PPC -= 1;
+	if (ydelta > 0 && _data->_world->coef < 2) {
+		_data->_world->coef += 0.1;
+		init_particles_position(_data);
+	}
+	else if (ydelta < 0 && _data->_world->coef > -2) {
+		_data->_world->coef -= 0.1;
+		init_particles_position(_data);
+	}
+
 }
 
 void	mouse_handle(mouse_key_t button, action_t action, modifier_key_t mods, void *param) {
@@ -91,67 +208,41 @@ void	mouse_handle(mouse_key_t button, action_t action, modifier_key_t mods, void
 		_data->_mouse->cursor_pressed = 0;
 }
 
-void	init_particles_position(data *_data) {
-	int		cur_particle = 0;
-	float		x, y, z;
-	float		circ_y;
-	float		radius;
-	
-	int	pos_x = _data->width / 2 - _data->_world->radius,
-		pos_y = _data->height / 2 - _data->_world->radius;
-
-	for (float i = 0; i <= M_PI; i += M_PI / C_COUNT) {
-		radius = sin(i);
-		circ_y = cos(i);
-		for (float j = 0; j <= M_PI * 2; j += M_PI / C_COUNT) {
-			x = cos(j) * radius;
-			z = sin(j) * radius;
-			// Y
-			y = cos(_data->_world->y_angle) * circ_y - sin(_data->_world->y_angle) * z;
-			z = sin(_data->_world->y_angle) * circ_y + cos(_data->_world->y_angle) * z;
-			// X
-			x = cos(_data->_world->x_angle) * x + sin(_data->_world->x_angle) * z;
-			z = -sin(_data->_world->x_angle) * x - cos(_data->_world->x_angle) * z;
-			//
-			_data->_world->particles[cur_particle][0] = (int)__calc_new_range(x, -1, 1, pos_x, pos_x + _data->_world->radius * 2);
-			_data->_world->particles[cur_particle][1] = (int)__calc_new_range(y, -1, 1, pos_y, pos_y + _data->_world->radius * 2);
-			_data->_world->particles[cur_particle][2] = z;
-			_data->_world->particles[cur_particle][3] = x;
-			_data->_world->particles[cur_particle][4] = y;
-			cur_particle += 1;
-		}
-	}
-}
-
 void	cursor_handle(double xpos, double ypos, void *param) {
 	data	*_data = (data*)param;
 	float	diff_x, diff_y;
+	float	delta_x, delta_y;
 	int	dis;
-	int	x, y;
-	int	pos_x = _data->width / 2 - _data->_world->radius,
-		pos_y = _data->height / 2 - _data->_world->radius;
 	//
 	if (!_data->_mouse->cursor_pressed) {
 		_data->_mouse->init_cursor_x = xpos;
 		_data->_mouse->init_cursor_y = ypos;
 		//
-		x = (int)(xpos > _data->width / 2 ? 1 : -1);
-		y = (int)(ypos > _data->height / 2 ? 1 : -1);
-		for (int i = 0; i < _data->_world->particle_count; i++) {
-			dis = sqrt( pow(abs((int)_data->_world->particles[i][0] - (int)xpos), 2) + pow(abs((int)_data->_world->particles[i][1] - (int)ypos), 2)  );
-			if (dis < 100) {
+		if (_data->_mouse->event_counter >= 1) {
+			_data->_mouse->event_counter = 0;
 
-				if (x > 0) _data->_world->particles[i][0] = _data->width / 2 - (_data->_world->particles[i][0] - _data->width / 2)*2;
-				else	 _data->_world->particles[i][0] = _data->width / 2 + (_data->width / 2 - _data->_world->particles[i][0])*2;
+			for (int i = 0; i < _data->_world->particle_count; i++) {
+				dis = sqrt( pow(fabs(_data->_world->particles[i]->x - xpos), 2) + pow(fabs(_data->_world->particles[i]->y - ypos), 2)  );
+				//
+				if (dis < _data->_world->radius / 2) {
+					//mlx_put_pixel(_data->mlx_img, _data->_world->particles[i]->x, _data->_world->particles[i]->y, 0xFF0000FF);
+					delta_x = _data->_world->particles[i]->x - _data->center_x;
+					delta_y = _data->_world->particles[i]->y - _data->center_y;
 
-				if (y > 0) _data->_world->particles[i][1] = _data->height / 2 - (_data->_world->particles[i][1] - _data->height / 2)*2;
-				else	 _data->_world->particles[i][1] = _data->height / 2 + (_data->height / 2 - _data->_world->particles[i][1])*2;
-			}
-			else {
-				_data->_world->particles[i][0] = (int)__calc_new_range(_data->_world->particles[i][3], -1, 1, pos_x, pos_x + _data->_world->radius * 2);
-				_data->_world->particles[i][1] = (int)__calc_new_range(_data->_world->particles[i][4], -1, 1, pos_y, pos_y + _data->_world->radius * 2);
+					/*if (x > 0) _data->_world->particles[i]->t_x = center_x - (_data->_world->particles[i]->x - center_x) * _data->_world->coef;
+					else	 _data->_world->particles[i]->t_x = center_x + (center_x - _data->_world->particles[i]->x) * _data->_world->coef;
+					if (y > 0) _data->_world->particles[i]->t_y = center_y - (_data->_world->particles[i]->y - center_y) * _data->_world->coef;
+					else	 _data->_world->particles[i]->t_y = center_y + (center_y - _data->_world->particles[i]->y) * _data->_world->coef;*/
+
+					_data->_world->particles[i]->t_x = _data->center_x + _data->_world->coef * delta_x * -1;
+					_data->_world->particles[i]->t_y = _data->center_y + _data->_world->coef * delta_y * -1;
+
+					_data->_world->particles[i]->real = TRUE;
+				}
+				else	_data->_world->particles[i]->real = FALSE;
 			}
 		}
+		else	_data->_mouse->event_counter += 1;
 	}
 	else {
 		if (_data->_mouse->event_counter >= 1) {
@@ -159,20 +250,24 @@ void	cursor_handle(double xpos, double ypos, void *param) {
 			diff_x = _data->_mouse->init_cursor_x - (int)xpos;
 			diff_y = _data->_mouse->init_cursor_y - (int)ypos;
 
-			diff_x = diff_x > 0 ? 0.1 : diff_x < 0 ? -0.1 : 0;
-			diff_y = diff_y > 0 ? 0.1 : diff_y < 0 ? -0.1 : 0;
+			diff_x = diff_x > 0 ? 2 : diff_x < 0 ? 2 : 0;
+			diff_y = diff_y > 0 ? 2 : diff_y < 0 ? 2 : 0;
 	
+			//printf("x_angle before: %f\n", _data->_world->x_angle);
 			_data->_world->x_angle += diff_x;
 			while (_data->_world->x_angle < 0) 
 				_data->_world->x_angle = 360 - (0 - _data->_world->x_angle);
 			while (_data->_world->x_angle > 360)
 				_data->_world->x_angle = 0 + (_data->_world->x_angle - 360);
+			//printf("x_angle after: %f\n", _data->_world->x_angle);
 
+			//printf("y_angle before: %f\n", _data->_world->y_angle);
 			_data->_world->y_angle += diff_y;
 			while (_data->_world->y_angle < 0)
 				_data->_world->y_angle = 360 - (0 - _data->_world->y_angle);
 			while (_data->_world->y_angle > 360)
 				_data->_world->y_angle = 0 + (_data->_world->y_angle - 360);
+			//printf("y_angle after: %f\n", _data->_world->y_angle);
 			
 			if (diff_x || diff_y)
 				init_particles_position(_data);
@@ -183,38 +278,64 @@ void	cursor_handle(double xpos, double ypos, void *param) {
 
 
 void	build_particles(data *_data) {
-	_data->_world->particles = malloc( (_data->_world->particle_count + 1) * sizeof(float*) );
+	_data->_world->particles = malloc( (_data->_world->particle_count + 1) * sizeof(particle) );
 	if (!_data->_world->particles)
 		exit( release(_data, 1) );
 	for (int y = 0; y < _data->_world->particle_count; y++) {
-		_data->_world->particles[y] = malloc( 5 * sizeof(float) );
-		if (!_data->_world->particles[y]) exit( release(_data, 1) );
-		memset(_data->_world->particles[y], 0, sizeof(float) * 3);
+		_data->_world->particles[y] = malloc( sizeof(particle) );
+		if (!_data->_world->particles[y])
+			exit( release(_data, 1) );
+		memset(_data->_world->particles[y], 0, sizeof(particle));
 	}
 	_data->_world->particles[ _data->_world->particle_count ] = NULL;
 }
 
 void	draw_bg(data* _data, int color) {
+	int	c = color;
 	for (int y = 0; y < _data->height; y++) 
-		for (int x = 0; x < _data->width; x++)
-			mlx_put_pixel(_data->mlx_img, x, y, color);
+		for (int x = 0; x < _data->width; x++) {
+			/*if ((x == (int)_data->_world->f_dir_x || y == (int)_data->_world->f_dir_y)
+				|| (x == (int)_data->_world->s_dir_x || y == (int)_data->_world->s_dir_y))
+				c = 0xFF0000FF;
+			else if (x == _data->center_x || y == _data->center_y)
+				c = 0x315da3FF;
+			else	c = color;*/
+			mlx_put_pixel(_data->mlx_img, x, y, c);
+		}
 }
 
 void	draw_particles(data *_data) {
 	//
+	float		x, y, z;
+	int		color, result;
 	for (int i = 0; i < _data->_world->particle_count && _data->_world->particles[i]; i++) {
-		
-		for (int i_y = _data->_world->particles[i][1]; i_y <= _data->_world->particles[i][1]; i_y++) {
-			for (int i_x = _data->_world->particles[i][0]; i_x <= _data->_world->particles[i][0]; i_x++) {
-				if (i_x > 0 && i_y > 0 && i_x < _data->width && i_y < _data->height) {
-					//int	color = (int)__calc_new_range(_data->_world->particles[i][2], -2, 2, 0, 255);
-					int	result = 0xFFFFFF;/*(color << 16) + (color << 8) + color;*/
-					mlx_put_pixel(_data->mlx_img, i_x, i_y, result << 8 | 0xFF);
-				}
-			}
+		x = _data->_world->particles[i]->real ? _data->_world->particles[i]->t_x : _data->_world->particles[i]->x;
+		y = _data->_world->particles[i]->real ? _data->_world->particles[i]->t_y : _data->_world->particles[i]->y;
+		z = _data->_world->particles[i]->z;
+		if (x > 0 && y > 0 && x < _data->width && y < _data->height) {
+			color = (int)__calc_new_range(z, -1.5, 1.5, 0, 255);
+			result = (color << 16) + (color << 8) + color;
+			mlx_put_pixel(_data->mlx_img, x, y, result << 8 | 0xFF);
 		}
 	}
 }
+
+void plotLine(data *_data, int x0, int y0, int x1, int y1)
+{
+   int dx =  abs(x1-x0), sx = x0<x1 ? 1 : -1;
+   int dy = -abs(y1-y0), sy = y0<y1 ? 1 : -1;
+   int err = dx+dy, e2; /* error value e_xy */
+
+   for(;;){  /* loop */
+	  if (x0 > 0 && y0 > 0 && x0 < _data->width && y0 < _data->height)
+	      mlx_put_pixel(_data->mlx_img, x0,y0, 0xFF0000FF);	
+      if (x0==x1 && y0==y1) break;
+      e2 = 2*err;
+      if (e2 >= dy) { err += dy; x0 += sx; } /* e_xy+e_x > 0 */
+      if (e2 <= dx) { err += dx; y0 += sy; } /* e_xy+e_y < 0 */
+   }
+}
+
 
 void	loop_hook(void *p) {
 	data	*_data = (data*)p;
@@ -223,6 +344,8 @@ void	loop_hook(void *p) {
 		_data->cur_frame = 0;
 		draw_bg(_data, BG_COLOR << 8 | 0xFF);
 		draw_particles(_data);
+		plotLine(_data, _data->center_x, _data->center_y, _data->_world->f_dir_x, _data->_world->f_dir_y);
+		plotLine(_data, _data->center_x, _data->center_y, _data->_world->s_dir_x, _data->_world->s_dir_y);
 	}
 	else	_data->cur_frame += 1;
 }
@@ -239,9 +362,10 @@ void	init_world(data *_data) {
 		for (float j = 0; j < M_PI * 2; j += M_PI / C_COUNT)
 			_data->_world->particle_count += 1;
 
-	build_particles(_data);
+	_data->_world->coef = -1.5;
 	_data->_world->x_angle = 10;
 	_data->_world->y_angle = 20;
+	build_particles(_data);
 	init_particles_position(_data);
 }
 
@@ -270,7 +394,7 @@ int			main(int c, char **v) {
 	//	TODO
 	signal(SIGINT, exit);
 	signal(SIGILL, SIG_IGN);
-	signal(SIGFPE, SIG_IGN);
+	//signal(SIGFPE, SIG_IGN);
 	signal(SIGQUIT, SIG_IGN);
 	signal(SIGTERM, exit);
 	signal(SIGSEGV, exit);
@@ -278,6 +402,8 @@ int			main(int c, char **v) {
 
 	_data->width = DEF_WIDTH;
 	_data->height = DEF_HEIGHT;
+	_data->center_x = _data->width / 2;
+	_data->center_y = _data->height / 2;
 
 	_data->mlx_ptr = mlx_init(_data->width, _data->height, "particle sphere", true);
 	if (!_data->mlx_ptr) return release(_data, 1);
