@@ -19,7 +19,7 @@
 # define FALSE 0
 #endif
 
-#define	C_COUNT		110	
+#define	C_COUNT		80	
 #define	DEF_PPC		1
 #define	DEF_FPG		4
 #define	MIN_WIDTH		600
