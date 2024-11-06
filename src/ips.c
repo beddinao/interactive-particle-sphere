@@ -209,8 +209,8 @@ void	cursor_handle(double xpos, double ypos, void *param) {
 			diff_x = _data->_mouse->init_cursor_x - (int)xpos;
 			diff_y = _data->_mouse->init_cursor_y - (int)ypos;
 
-			diff_x = diff_x > 0 ? 2 : diff_x < 0 ? -2 : 0;
-			diff_y = diff_y > 0 ? 2 : diff_y < 0 ? -2 : 0;
+			diff_x = diff_x > 0 ? 1 : diff_x < 0 ? -1 : 0;
+			diff_y = diff_y > 0 ? 1 : diff_y < 0 ? -1 : 0;
 
 			//printf("x_angle before: %f\n", _data->_world->x_angle);
 			_data->_world->x_angle += diff_x;
@@ -255,41 +255,7 @@ void	draw_bg(data* _data, int color) {
 			mlx_put_pixel(_data->mlx_img, x, y, !(x % 20) || !(y % 20) ? 0x1c1c1cFF : color);
 }
 
-void	draw_particles(data *_data) {
-	//
-	float		x, y;
-	int		color, result;
-
-	for (int i = 0; i < _data->_world->particle_count && _data->_world->particles[i]; i++) {
-		if (_data->_world->particles[i]->real) {
-
-			// /// / linear interpolation attempt
-			/*if ((int)_data->_world->particles[i]->x != _data->_world->particles[i]->t_x) {
-				x = _data->_world->particles[i]->x + 1;
-				y = _data->_world->particles[i]->y +
-					((_data->_world->particles[i]->t_y - _data->_world->particles[i]->y)
-					 	/ (_data->_world->particles[i]->t_x - _data->_world->particles[i]->x))
-					* (x - _data->_world->particles[i]->x);
-				_data->_world->particles[i]->x = x;
-			}
-			else {*/
-				x = _data->_world->particles[i]->t_x;
-				y = _data->_world->particles[i]->t_y;
-			//}
-		}
-		else {
-			x = _data->_world->particles[i]->x;
-			y = _data->_world->particles[i]->y;
-		}
-		if (x > 0 && y > 0 && x < _data->width && y < _data->height) {
-			color = (int)__calc_new_range(_data->_world->particles[i]->z, -1.5, 1.5, 0, 255);
-			result = (color << 16) + (color << 8) + color;
-			mlx_put_pixel(_data->mlx_img, x, y, result << 8 | 0xFF);
-		}
-	}
-}
-
-void plotLine(data *_data, int x0, int y0, int x1, int y1)
+void plotLine(data *_data, int x0, int y0, int x1, int y1, int color)
 {
 	int dx =  abs(x1-x0), sx = x0<x1 ? 1 : -1;
 	int dy = -abs(y1-y0), sy = y0<y1 ? 1 : -1;
@@ -297,7 +263,7 @@ void plotLine(data *_data, int x0, int y0, int x1, int y1)
 
 	for(;;){ 
 		if (x0 > 0 && y0 > 0 && x0 < _data->width && y0 < _data->height)
-			mlx_put_pixel(_data->mlx_img, x0,y0, 0x3882d1FF);	
+			mlx_put_pixel(_data->mlx_img, x0,y0, color);	
 		if (x0==x1 && y0==y1) break;
 		e2 = 2*err;
 		if (e2 >= dy) { err += dy; x0 += sx; }
@@ -305,6 +271,30 @@ void plotLine(data *_data, int x0, int y0, int x1, int y1)
 	}
 }
 
+void	draw_particles(data *_data) {
+	//
+	float		x0, y0, x1, y1;
+	int		color, result;
+
+	for (int i = 0, j = 0; i < _data->_world->particle_count - 1 && _data->_world->particles[i + 1]; i++, j += M_PI) {
+		x0 = _data->_world->particles[i]->real ? _data->_world->particles[i]->t_x : _data->_world->particles[i]->x;
+		y0 = _data->_world->particles[i]->real ? _data->_world->particles[i]->t_y : _data->_world->particles[i]->y;
+		x1 = _data->_world->particles[i + 1]->real ? _data->_world->particles[i + 1]->t_x : _data->_world->particles[i + 1]->x;
+		y1 = _data->_world->particles[i + 1]->real ? _data->_world->particles[i + 1]->t_y : _data->_world->particles[i + 1]->y;
+
+			/*color = (int)__calc_new_range(_data->_world->particles[i]->y,
+				_data->center_y - _data->_world->radius, _data->center_y + _data->_world->radius, 255, 0);*/
+			color = (int)__calc_new_range(_data->_world->particles[i]->z, -1.5, 1.5, 0, 255);
+			result = (color << 16) + (color << 8) + color;
+			plotLine(_data, x0, y0, x1, y1, result << 8 |0xFF);
+			if (i + 80 < _data->_world->particle_count) {
+				int x2 = _data->_world->particles[i + 80]->real ? _data->_world->particles[i + 80]->t_x : _data->_world->particles[i + 80]->x;
+				int y2 = _data->_world->particles[i + 80]->real ? _data->_world->particles[i + 80]->t_y : _data->_world->particles[i + 80]->y;
+				plotLine(_data, x0, y0, x2, y2, result << 8|0xFF);
+			}
+			//mlx_put_pixel(_data->mlx_img, x, y, result << 8 | 0xFF);
+	}
+}
 
 void	loop_hook(void *p) {
 	data	*_data = (data*)p;
@@ -313,8 +303,8 @@ void	loop_hook(void *p) {
 		_data->cur_frame = 0;
 		draw_bg(_data, BG_COLOR << 8 | 0xFF);
 		draw_particles(_data);
-		plotLine(_data, _data->center_x, _data->center_y, _data->_world->f_dir_x, _data->_world->f_dir_y);
-		plotLine(_data, _data->center_x, _data->center_y, _data->_world->s_dir_x, _data->_world->s_dir_y);
+		plotLine(_data, _data->center_x, _data->center_y, _data->_world->f_dir_x, _data->_world->f_dir_y, 0x3882d1FF);
+		plotLine(_data, _data->center_x, _data->center_y, _data->_world->s_dir_x, _data->_world->s_dir_y, 0x3882d1FF);
 	}
 	else	_data->cur_frame += 1;
 }
@@ -326,10 +316,20 @@ int	rand_num(int min, int max) {
 void	init_world(data *_data) {
 	if (!_data)	return;
 
+
+	int		x = 0, y = 0;
+
 	srand(time(NULL));
-	for (float i = 0; i <= M_PI; i += M_PI / C_COUNT)
-		for (float j = 0; j < M_PI * 2; j += M_PI / C_COUNT)
+	for (float i = 0; i <= M_PI; i += M_PI / C_COUNT) {
+		x = 0;
+		for (float j = 0; j < M_PI * 2; j += M_PI / C_COUNT) {
 			_data->_world->particle_count += 1;
+			x++;
+		}
+		//printf("x: %i\n", x);
+		y++;
+	}
+	//printf("y: %i\n", y );
 
 	_data->_world->coef = -1.5;
 	_data->_world->x_angle = 10;
