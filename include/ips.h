@@ -34,13 +34,14 @@ typedef struct particle
 	float		x;
 	float		y;
 	float		z;
-	//
+	float		init_x;
+	float		init_y;
+	float		init_z;
+	float		eo_x;
+	float		eo_y;
 	bool		real;
 	float		t_x;
 	float		t_y;
-	//
-	float		eo_x;
-	float		eo_y;
 }	particle;
 
 typedef struct mouse_data
@@ -58,13 +59,14 @@ typedef struct map_data
 	int		radius;
 	float		x_angle;
 	float		y_angle;
+	int		PPC;
 	float		coef;
-	float		f_dir_x;
-	float		f_dir_y;
-	float		f_dir_z;
-	float		s_dir_x;
-	float		s_dir_y;
-	float		s_dir_z;
+	float		dirX_x;
+	float		dirX_y;
+	float		dirX_z;
+	float		dirY_x;
+	float		dirY_y;
+	float		dirY_z;
 }	world_data;
 
 typedef struct data
@@ -77,11 +79,9 @@ typedef struct data
 	mouse_data	*_mouse;
 	int		PPC;
 	int		FPG;
-	//
 	int		cur_frame;
 	int		last_resize_w;
 	int		last_resize_h;
-	//
 	int		center_x;
 	int		center_y;
 }	data;
