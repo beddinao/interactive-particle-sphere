@@ -32,6 +32,10 @@ int	release(data *_data, int status) {
 	return	status;
 }
 
+int	rand_num(int min, int max) {
+	return	rand() % (max - min + 1) + min;
+}
+
 float	__calc_new_range(float old_value, float old_min, float old_max, float new_min, float new_max) {
 	if (old_value == old_min)
 		return(new_min);
@@ -100,6 +104,36 @@ void init_particles_position(data *_data) {
 			cur_particle += 1;
 		}
 	}
+}
+
+void	mini_init(data *_data) {
+	float	x, y, z;
+	float	x_angle = _data->_world->x_angle * (M_PI / 180.0f),
+		y_angle = _data->_world->y_angle * (M_PI / 180.0f);
+	int	pos_x = _data->width / 2 - _data->_world->radius,
+		pos_y = _data->height / 2 - _data->_world->radius;
+	float	temp_y, temp_x;
+
+	for (int i = 0; i < _data->_world->particle_count; i++) {
+		x = _data->_world->particles[i]->eo_x;
+		y = _data->_world->particles[i]->eo_y;
+		z = _data->_world->particles[i]->z;
+			temp_y = y;
+
+			y = cos(y_angle) * temp_y - sin(y_angle) * z;
+			z = sin(y_angle) * temp_y + cos(y_angle) * z;
+			// X
+			temp_x = x;
+			x = cos(x_angle) * temp_x + sin(x_angle) * z;
+			z = -sin(x_angle) * temp_x - cos(x_angle) * z;
+
+			_data->_world->particles[i]->x = (int)__calc_new_range(x, -1, 1, pos_x, pos_x + _data->_world->radius * 2);
+			_data->_world->particles[i]->y = (int)__calc_new_range(y, -1, 1, pos_y, pos_y + _data->_world->radius * 2);
+			_data->_world->particles[i]->z = z;
+			_data->_world->particles[i]->eo_x = x;
+			_data->_world->particles[i]->eo_y = y;
+	}
+
 }
 
 void	close_handle(void *p) {
@@ -249,10 +283,16 @@ void	build_particles(data *_data) {
 	_data->_world->particles[ _data->_world->particle_count ] = NULL;
 }
 
-void	draw_bg(data* _data, int color) {
-	for (int y = 0; y < _data->height; y++) 
-		for (int x = 0; x < _data->width; x++) 
-			mlx_put_pixel(_data->mlx_img, x, y, !(x % 20) || !(y % 20) ? 0x1c1c1cFF : color);
+void	draw_bg(data* _data) {
+	int	color, c;
+	for (int y = 0; y < _data->height; y++) {
+		color = (int)__calc_new_range(y, 0, _data->height, 50, 0);
+		for (int x = 0; x < _data->width; x++) {
+			if (y < _data->height / 2 && (!(x % 20) || !(y % 20)))	c = 0x1a;
+			else			c = color;
+			mlx_put_pixel(_data->mlx_img, x, y, (c << 24) + (c << 16) + (c << 8) + 0xFF);
+		}
+	}
 }
 
 void plotLine(data *_data, int x0, int y0, int x1, int y1, int color)
@@ -261,9 +301,10 @@ void plotLine(data *_data, int x0, int y0, int x1, int y1, int color)
 	int dy = -abs(y1-y0), sy = y0<y1 ? 1 : -1;
 	int err = dx+dy, e2;
 
-	for(;;){ 
-		if (x0 > 0 && y0 > 0 && x0 < _data->width && y0 < _data->height)
-			mlx_put_pixel(_data->mlx_img, x0,y0, color);	
+	for(;;){
+		if (x0 > 0 && y0 > 0 && x0 < _data->width && y0 < _data->height) 
+			mlx_put_pixel(_data->mlx_img, x0,y0, color);
+
 		if (x0==x1 && y0==y1) break;
 		e2 = 2*err;
 		if (e2 >= dy) { err += dy; x0 += sx; }
@@ -276,23 +317,37 @@ void	draw_particles(data *_data) {
 	float		x0, y0, x1, y1;
 	int		color, result;
 
-	for (int i = 0, j = 0; i < _data->_world->particle_count - 1 && _data->_world->particles[i + 1]; i++, j += M_PI) {
+	for (int i = 0, j; i < _data->_world->particle_count - 2 && _data->_world->particles[i + 2]; i += 2) {
+		j = i + 2;
+		if (((i + 2) % 61) <= 1) {
+			j = i - ((61 - 3) + ((i + 2) % 61));
+			if (j < 0) continue;
+		}
 		x0 = _data->_world->particles[i]->real ? _data->_world->particles[i]->t_x : _data->_world->particles[i]->x;
 		y0 = _data->_world->particles[i]->real ? _data->_world->particles[i]->t_y : _data->_world->particles[i]->y;
-		x1 = _data->_world->particles[i + 1]->real ? _data->_world->particles[i + 1]->t_x : _data->_world->particles[i + 1]->x;
-		y1 = _data->_world->particles[i + 1]->real ? _data->_world->particles[i + 1]->t_y : _data->_world->particles[i + 1]->y;
+		x1 = _data->_world->particles[j]->real ? _data->_world->particles[j]->t_x : _data->_world->particles[j]->x;
+		y1 = _data->_world->particles[j]->real ? _data->_world->particles[j]->t_y : _data->_world->particles[j]->y;
 
-			/*color = (int)__calc_new_range(_data->_world->particles[i]->y,
-				_data->center_y - _data->_world->radius, _data->center_y + _data->_world->radius, 255, 0);*/
-			color = (int)__calc_new_range(_data->_world->particles[i]->z, -1.5, 1.5, 0, 255);
+			color = (int)__calc_new_range(_data->_world->particles[i]->y,
+				_data->center_y - _data->_world->radius, _data->center_y + _data->_world->radius, 0, 80);
+
 			result = (color << 16) + (color << 8) + color;
-			plotLine(_data, x0, y0, x1, y1, result << 8 |0xFF);
-			if (i + 80 < _data->_world->particle_count) {
-				int x2 = _data->_world->particles[i + 80]->real ? _data->_world->particles[i + 80]->t_x : _data->_world->particles[i + 80]->x;
-				int y2 = _data->_world->particles[i + 80]->real ? _data->_world->particles[i + 80]->t_y : _data->_world->particles[i + 80]->y;
+			
+			if (i + 60 < _data->_world->particle_count ) {
+				int x2 = _data->_world->particles[i + 60]->real ? _data->_world->particles[i + 60]->t_x : _data->_world->particles[i + 60]->x;
+				int y2 = _data->_world->particles[i + 60]->real ? _data->_world->particles[i + 60]->t_y : _data->_world->particles[i + 60]->y;
+				plotLine(_data, x0, y0, x2, y2, result << 8 | 0xFF);
+			}
+			if (i + 62 < _data->_world->particle_count ) {
+				int x2 = _data->_world->particles[i + 62]->real ? _data->_world->particles[i + 62]->t_x : _data->_world->particles[i + 62]->x;
+				int y2 = _data->_world->particles[i + 62]->real ? _data->_world->particles[i + 62]->t_y : _data->_world->particles[i + 62]->y;
 				plotLine(_data, x0, y0, x2, y2, result << 8|0xFF);
 			}
-			//mlx_put_pixel(_data->mlx_img, x, y, result << 8 | 0xFF);
+
+			color = (int)__calc_new_range(_data->_world->particles[i]->z, -1.5, 1.5, 255, 0);
+			result = (color << 16) + (color << 8) + color;
+			if (x0 > 0 && y0 > 0 && x0 < _data->width && y0 < _data->height)
+				mlx_put_pixel(_data->mlx_img, x0, y0, result << 8 | 0xFF);
 	}
 }
 
@@ -301,16 +356,23 @@ void	loop_hook(void *p) {
 	//
 	if (_data->cur_frame >= _data->FPG) {
 		_data->cur_frame = 0;
-		draw_bg(_data, BG_COLOR << 8 | 0xFF);
+
+		if (!_data->_mouse->cursor_pressed) {
+			_data->_world->x_angle += 3;
+			if (_data->_world->x_angle >= 360)
+				_data->_world->x_angle = 0;
+			_data->_world->y_angle += 1;
+			if (_data->_world->y_angle >= 360)
+				_data->_world->y_angle = 0;
+			mini_init(_data);
+		}
+
+		draw_bg(_data);
 		draw_particles(_data);
 		plotLine(_data, _data->center_x, _data->center_y, _data->_world->f_dir_x, _data->_world->f_dir_y, 0x3882d1FF);
 		plotLine(_data, _data->center_x, _data->center_y, _data->_world->s_dir_x, _data->_world->s_dir_y, 0x3882d1FF);
 	}
 	else	_data->cur_frame += 1;
-}
-
-int	rand_num(int min, int max) {
-	return	rand() % (max - min + 1) + min;
 }
 
 void	init_world(data *_data) {
@@ -366,7 +428,7 @@ int			main(int c, char **v) {
 	//signal(SIGFPE, SIG_IGN);
 	signal(SIGQUIT, SIG_IGN);
 	signal(SIGTERM, exit);
-	signal(SIGSEGV, exit);
+	//signal(SIGSEGV, exit);
 	//
 
 	_data->width = DEF_WIDTH;
@@ -387,7 +449,7 @@ int			main(int c, char **v) {
 	if (_data->_world->radius >= _data->width)
 		_data->_world->radius = _data->width / 3;
 
-	draw_bg(_data, BG_COLOR << 8 | 0xFF);
+	draw_bg(_data);
 
 	init_world(_data);
 	mlx_image_to_window(_data->mlx_ptr, _data->mlx_img, 0, 0);
