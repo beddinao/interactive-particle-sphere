@@ -42,17 +42,21 @@ float	__calc_new_range(float old_value, float old_min, float old_max, float new_
 	return (((old_value - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min;
 }
 
-void	draw_pixel(data *_data, int x, int y, int color) {
-	if (_data && _data->mlx_img && x > 0 && y > 0 && x < _data->width && y < _data->height)
-		mlx_put_pixel(_data->mlx_img, x, y, color);
+void	draw_pixel(data *_data, int x, int y, int c, int color) {
+	int	h_c = c/2;
+	for (int i_y = y - h_c; i_y <= y + h_c; i_y++)
+		for (int i_x = x - h_c; i_x <= x + h_c; i_x++)
+			if (_data && _data->mlx_img && i_x > 0 && i_y > 0
+				&& i_x < _data->width && i_y < _data->height)
+				mlx_put_pixel(_data->mlx_img, i_x, i_y, color);
 }
 
 void init_particles_position(data *_data) {
 	int	cur_particle = 0;
 	float	x, y, z;
 	float	circ_y, temp_x, radius;
-	int	pos_x = _data->width / 2 - _data->_world->radius,
-		pos_y = _data->height / 2 - _data->_world->radius;
+	int	pos_x = _data->center_x - _data->_world->radius,
+		pos_y = _data->center_y - _data->_world->radius;
 	float	x_angle = _data->_world->x_angle * (M_PI / 180.0f),
 		y_angle = _data->_world->y_angle * (M_PI / 180.0f);
 
@@ -98,10 +102,6 @@ void init_particles_position(data *_data) {
 			_data->_world->particles[cur_particle]->eo_x = x;
 			_data->_world->particles[cur_particle]->eo_y = y;
 
-			if (_data->_world->particles[cur_particle]->real) {
-				_data->_world->particles[cur_particle]->t_x = _data->center_x - (_data->_world->particles[cur_particle]->x - _data->center_x) * _data->_world->coef;
-				_data->_world->particles[cur_particle]->t_y = _data->center_y - (_data->_world->particles[cur_particle]->y - _data->center_y) * _data->_world->coef;
-			}
 			cur_particle += 1;
 		}
 	}
@@ -111,8 +111,8 @@ void	update_particles_position(data *_data) {
 	float	x, y, z;
 	float	x_angle = _data->_world->x_angle * (M_PI / 180.0f),
 		y_angle = _data->_world->y_angle * (M_PI / 180.0f);
-	int	pos_x = _data->width / 2 - _data->_world->radius,
-		pos_y = _data->height / 2 - _data->_world->radius;
+	int	pos_x = _data->center_x - _data->_world->radius,
+		pos_y = _data->center_y - _data->_world->radius;
 	float	temp_x, temp_y;
 	
 	float	dir_x = _data->_world->radius,
@@ -130,7 +130,6 @@ void	update_particles_position(data *_data) {
 
 	dir_x = 0;
 	dir_y = _data->_world->radius;
-	dir_z = 0;
 
 	_data->_world->dirY_x = dir_x;
 	_data->_world->dirY_y = cos(y_angle) * dir_y - sin(y_angle) * dir_z;
@@ -157,6 +156,11 @@ void	update_particles_position(data *_data) {
 		_data->_world->particles[i]->z = z;
 		_data->_world->particles[i]->eo_x = x;
 		_data->_world->particles[i]->eo_y = y;
+
+		if (_data->_world->particles[i]->real) {
+			_data->_world->particles[i]->t_x = _data->center_x - (_data->_world->particles[i]->x - _data->center_x) * _data->_world->coef;
+			_data->_world->particles[i]->t_y = _data->center_y - (_data->_world->particles[i]->y - _data->center_y) * _data->_world->coef;
+		}
 	}
 
 }
@@ -181,7 +185,6 @@ void	resize_handle(int w, int h, void *p) {
 			_data->center_y = _data->height / 2;
 			_data->last_resize_w = w;
 			_data->last_resize_h = h;
-			update_particles_position(_data);
 		}
 		if (!mlx_resize_image(_data->mlx_img, _data->width, _data->height))
 			exit( release(_data, 1) );
@@ -275,9 +278,6 @@ void	cursor_handle(double xpos, double ypos, void *param) {
 				_data->_world->y_angle = 360 - (0 - _data->_world->y_angle);
 			while (_data->_world->y_angle > 360)
 				_data->_world->y_angle = 0 + (_data->_world->y_angle - 360);
-
-			if (diff_x || diff_y)
-				update_particles_position(_data);
 		}
 		else	_data->_mouse->event_counter += 1;
 	}
@@ -298,13 +298,12 @@ void	build_particles(data *_data) {
 }
 
 void	draw_bg(data* _data) {
-	int	color, c;
+	int	color = 0x00, c;
 
 	for (int y = 0; y < _data->height; y++) {
-		color = (int)__calc_new_range(y, 0, _data->height, 0, 80);
 		for (int x = 0; x < _data->width; x++) {
 			if ((!(x % 20) || !(y % 20)))
-				c = 0x10;
+				c = 0x16;
 			else	c = color;
 			mlx_put_pixel(_data->mlx_img, x, y, (c << 24) + (c << 16) + (c << 8) + 0xFF);
 		}
@@ -315,11 +314,10 @@ void	draw_line(data *_data, int x0, int y0, int x1, int y1, int color) {
 	int	dx =  abs(x1-x0), sx = x0<x1 ? 1 : -1;
 	int	dy = -abs(y1-y0), sy = y0<y1 ? 1 : -1;
 	int	err = dx+dy, e2;
+	int	i_x = x0, i_y = y0;
 
 	for(;;){
-		draw_pixel(_data, x0, y0, color);
-		if (x0 == x1 && y0 == y1)
-			break;
+		if (x0 == x1 && y0 == y1) break;
 		e2 = 2*err;
 		if (e2 >= dy) {
 			err += dy;
@@ -329,44 +327,55 @@ void	draw_line(data *_data, int x0, int y0, int x1, int y1, int color) {
 			err += dx;
 			y0 += sy;
 		}
+		draw_pixel(_data, x0, y0, 1, color);
 	}
 }
 
 void	draw_particles(data *_data) {
 	//
-	int		x0, y0, x1, y1, x2, y2;
+	int		x0, y0, x1, y1;
 	int		color, result;
+	//bool		valid = TRUE;
 
-	for (int i = 0, j; i < _data->_world->particle_count - 2 && _data->_world->particles[i + 2]; i += 2) {
-		j = i + 2;
+	for (int i = 0/*, j*/; i < _data->_world->particle_count - 2 && _data->_world->particles[i + 2]; i += 2) {
+		/*j = i + 2;
 		if (((i + 2) % _data->_world->PPC) <= 1) {
 			j = i - ((_data->_world->PPC - 3) + ((i + 2) % _data->_world->PPC));
-			if (j < 0)
-				continue;
-		}
+			if (j < 0)	continue;
+		}*/
 		x0 = _data->_world->particles[i]->real ? _data->_world->particles[i]->t_x : _data->_world->particles[i]->x;
 		y0 = _data->_world->particles[i]->real ? _data->_world->particles[i]->t_y : _data->_world->particles[i]->y;
-		x1 = _data->_world->particles[j]->real ? _data->_world->particles[j]->t_x : _data->_world->particles[j]->x;
-		y1 = _data->_world->particles[j]->real ? _data->_world->particles[j]->t_y : _data->_world->particles[j]->y;
-
-		color = (int)__calc_new_range(_data->_world->particles[i]->y,
-			_data->center_y - _data->_world->radius, _data->center_y + _data->_world->radius, 0, 100);
+		color = (int)__calc_new_range(_data->_world->particles[i]->z, -1.5, 1.5, 100, 0);
 		result = (color << 16) + (color << 8) + color;
-			
-		if (i + (_data->_world->PPC-1) < _data->_world->particle_count ) {
-			x2 = _data->_world->particles[i + (_data->_world->PPC-1)]->real ? _data->_world->particles[i + (_data->_world->PPC-1)]->t_x : _data->_world->particles[i + (_data->_world->PPC-1)]->x;
-			y2 = _data->_world->particles[i + (_data->_world->PPC-1)]->real ? _data->_world->particles[i + (_data->_world->PPC-1)]->t_y : _data->_world->particles[i + (_data->_world->PPC-1)]->y;
-			draw_line(_data, x0, y0, x2, y2, result << 8|0xFF);
+		{
+			if (i + (_data->_world->PPC-1) < _data->_world->particle_count ) {
+				x1 = _data->_world->particles[i + (_data->_world->PPC-1)]->real ? _data->_world->particles[i + (_data->_world->PPC-1)]->t_x : _data->_world->particles[i + (_data->_world->PPC-1)]->x;
+				y1 = _data->_world->particles[i + (_data->_world->PPC-1)]->real ? _data->_world->particles[i + (_data->_world->PPC-1)]->t_y : _data->_world->particles[i + (_data->_world->PPC-1)]->y;
+				draw_line(_data, x0, y0, x1, y1, result << 8|0xFF);
+			}
+			if (i + (_data->_world->PPC+1) < _data->_world->particle_count ) {
+				x1 = _data->_world->particles[i + (_data->_world->PPC+1)]->real ? _data->_world->particles[i + (_data->_world->PPC+1)]->t_x : _data->_world->particles[i + (_data->_world->PPC+1)]->x;
+				y1 = _data->_world->particles[i + (_data->_world->PPC+1)]->real ? _data->_world->particles[i + (_data->_world->PPC+1)]->t_y : _data->_world->particles[i + (_data->_world->PPC+1)]->y;
+				draw_line(_data, x0, y0, x1, y1, result << 8|0xFF);
+			}
 		}
-		if (i + (_data->_world->PPC+1) < _data->_world->particle_count ) {
-			x2 = _data->_world->particles[i + (_data->_world->PPC+1)]->real ? _data->_world->particles[i + (_data->_world->PPC+1)]->t_x : _data->_world->particles[i + (_data->_world->PPC+1)]->x;
-			y2 = _data->_world->particles[i + (_data->_world->PPC+1)]->real ? _data->_world->particles[i + (_data->_world->PPC+1)]->t_y : _data->_world->particles[i + (_data->_world->PPC+1)]->y;
-			draw_line(_data, x0, y0, x2, y2, result << 8|0xFF);
+		{
+			if (i - (_data->_world->PPC-1) > 0 ) {
+				x1 = _data->_world->particles[i - (_data->_world->PPC-1)]->real ? _data->_world->particles[i - (_data->_world->PPC-1)]->t_x : _data->_world->particles[i - (_data->_world->PPC-1)]->x;
+				y1 = _data->_world->particles[i - (_data->_world->PPC-1)]->real ? _data->_world->particles[i - (_data->_world->PPC-1)]->t_y : _data->_world->particles[i - (_data->_world->PPC-1)]->y;
+				draw_line(_data, x0, y0, x1, y1, result << 8|0xFF);
+			}
+			if (i - (_data->_world->PPC+1) > 0 ) {
+				x1 = _data->_world->particles[i - (_data->_world->PPC+1)]->real ? _data->_world->particles[i - (_data->_world->PPC+1)]->t_x : _data->_world->particles[i - (_data->_world->PPC+1)]->x;
+				y1 = _data->_world->particles[i - (_data->_world->PPC+1)]->real ? _data->_world->particles[i - (_data->_world->PPC+1)]->t_y : _data->_world->particles[i - (_data->_world->PPC+1)]->y;
+				draw_line(_data, x0, y0, x1, y1, result << 8|0xFF);
+			}
 		}
-
-		color = (int)__calc_new_range(_data->_world->particles[i]->z, -1.5, 1.5, 255, 0);
-		result = (color << 16) + (color << 8) + color;
-		draw_pixel(_data, x0, y0, result << 8|0xFF);
+	}
+	for (int i = 0, j; i < _data->_world->particle_count; i += 2) {
+		x0 = _data->_world->particles[i]->real ? _data->_world->particles[i]->t_x : _data->_world->particles[i]->x;
+		y0 = _data->_world->particles[i]->real ? _data->_world->particles[i]->t_y : _data->_world->particles[i]->y;
+		draw_pixel(_data, x0, y0, 1, 0xFFFFFFFF);
 	}
 }
 
@@ -382,8 +391,8 @@ void	loop_hook(void *p) {
 			_data->_world->y_angle += 1;
 			if (_data->_world->y_angle >= 360)
 				_data->_world->y_angle = 0;
-			update_particles_position(_data);
 		}
+		update_particles_position(_data);
 		draw_bg(_data);
 		draw_particles(_data);
 		draw_line(_data, _data->center_x, _data->center_y, _data->_world->dirX_x, _data->_world->dirX_y, 0x3882d1FF);
