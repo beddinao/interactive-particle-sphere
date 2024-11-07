@@ -19,9 +19,8 @@
 # define FALSE 0
 #endif
 
-#define	C_COUNT		30	
-#define	DEF_PPC		1
-#define	DEF_FPG		4
+#define	C_COUNT		30
+#define	DEF_FPG		2
 #define	MIN_WIDTH		600
 #define	MIN_HEIGHT	300
 #define	DEF_WIDTH		1600
@@ -77,7 +76,6 @@ typedef struct data
 	int		height;
 	world_data	*_world;
 	mouse_data	*_mouse;
-	int		PPC;
 	int		FPG;
 	int		cur_frame;
 	int		last_resize_w;
