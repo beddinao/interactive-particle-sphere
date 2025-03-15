@@ -19,7 +19,7 @@ NAME = ips
 all: mlx $(NAME)
 
 mlx:
-	@cmake -B ./MLX42/build ./MLX42
+	@cmake -B ./MLX42/build ./MLX42 -D CMAKE_CXX_COMPILER="g++"
 	@cmake --build ./MLX42/build -j16
 
 $(NAME): $(OBJ)
